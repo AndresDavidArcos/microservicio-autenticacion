@@ -1,47 +1,64 @@
-# Proyecto Base Implementando Clean Architecture
+### Microservicio de Autenticación
+**URL Base:** `http://localhost:8080`
 
-## Antes de Iniciar
+#### 1. Registrar un nuevo usuario
+Registra un nuevo solicitante en el sistema con sus datos personales.
 
-Empezaremos por explicar los diferentes componentes del proyectos y partiremos de los componentes externos, continuando con los componentes core de negocio (dominio) y por último el inicio y configuración de la aplicación.
+* **Endpoint:** `POST /api/v1/usuarios`
+* **Método:** `POST`
 
-Lee el artículo [Clean Architecture — Aislando los detalles](https://medium.com/bancolombia-tech/clean-architecture-aislando-los-detalles-4f9530f35d7a)
+**Parámetros del Body (Request Body)**
 
-# Arquitectura
+Se debe enviar un objeto JSON con la siguiente estructura:
+```json
+{
+    "documentoIdentidad": "123456789",
+    "nombres": "Juan Alberto",
+    "apellidos": "Perez Lopez",
+    "fechaNacimiento": "1990-05-15",
+    "direccion": "Calle Falsa 123",
+    "telefono": "3001234567",
+    "correoElectronico": "juan.perez@email.com",
+    "salarioBase": 5000000
+}
+```
+| Campo | Tipo | Descripción | Obligatorio |
+| :--- | :--- | :--- | :--- |
+| `documentoIdentidad` | String | Número de identificación único del solicitante. | Sí |
+| `nombres` | String | Nombres del solicitante. | Sí |
+| `apellidos` | String | Apellidos del solicitante. | Sí |
+| `fechaNacimiento` | String | Fecha de nacimiento en formato `YYYY-MM-DD`. | No |
+| `direccion` | String | Dirección de residencia. | No |
+| `telefono` | String | Número de teléfono de contacto. | No |
+| `correoElectronico` | String | Correo electrónico válido. Debe ser único. | Sí |
+| `salarioBase` | Number | Salario base mensual (entre 0 y 15,000,000). | Sí |
 
-![Clean Architecture](https://miro.medium.com/max/1400/1*ZdlHz8B0-qu9Y-QO3AXR_w.png)
+**Posibles Salidas (Responses)**
 
-## Domain
+* **`201 Created`**: El usuario fue registrado exitosamente.
+    * **Cuerpo:** Un objeto JSON con los datos del usuario creado.
+* **`400 Bad Request`**: Los datos enviados son inválidos.
+    * **Cuerpo:** Un mensaje de error describiendo la validación que falló (ej: "Nombres, apellidos, correo y salario son obligatorios.", "Formato de correo electrónico inválido.").
+* **`409 Conflict`**: El `documentoIdentidad` o el `correoElectronico` ya se encuentran registrados en el sistema.
+    * **Cuerpo:** Un mensaje de error (ej: "El correo electrónico ya está registrado.").
 
-Es el módulo más interno de la arquitectura, pertenece a la capa del dominio y encapsula la lógica y reglas del negocio mediante modelos y entidades del dominio.
+---
 
-## Usecases
+#### 2. Verificar existencia de un usuario
+Verifica si un usuario existe en el sistema a través de su número de documento.
 
-Este módulo gradle perteneciente a la capa del dominio, implementa los casos de uso del sistema, define lógica de aplicación y reacciona a las invocaciones desde el módulo de entry points, orquestando los flujos hacia el módulo de entities.
+* **Endpoint:** `HEAD /api/v1/usuarios/existe/{documento}`
+* **Método:** `HEAD`
 
-## Infrastructure
+**Parámetros de Ruta (Path Parameters)**
 
-### Helpers
+| Parámetro | Tipo | Descripción |
+| :--- | :--- | :--- |
+| `{documento}` | String | El número de documento de identidad a verificar. |
 
-En el apartado de helpers tendremos utilidades generales para los Driven Adapters y Entry Points.
+**Posibles Salidas (Responses)**
 
-Estas utilidades no están arraigadas a objetos concretos, se realiza el uso de generics para modelar comportamientos
-genéricos de los diferentes objetos de persistencia que puedan existir, este tipo de implementaciones se realizan
-basadas en el patrón de diseño [Unit of Work y Repository](https://medium.com/@krzychukosobudzki/repository-design-pattern-bc490b256006)
-
-Estas clases no puede existir solas y debe heredarse su compartimiento en los **Driven Adapters**
-
-### Driven Adapters
-
-Los driven adapter representan implementaciones externas a nuestro sistema, como lo son conexiones a servicios rest,
-soap, bases de datos, lectura de archivos planos, y en concreto cualquier origen y fuente de datos con la que debamos
-interactuar.
-
-### Entry Points
-
-Los entry points representan los puntos de entrada de la aplicación o el inicio de los flujos de negocio.
-
-## Application
-
-Este módulo es el más externo de la arquitectura, es el encargado de ensamblar los distintos módulos, resolver las dependencias y crear los beans de los casos de use (UseCases) de forma automática, inyectando en éstos instancias concretas de las dependencias declaradas. Además inicia la aplicación (es el único módulo del proyecto donde encontraremos la función “public static void main(String[] args)”.
-
-**Los beans de los casos de uso se disponibilizan automaticamente gracias a un '@ComponentScan' ubicado en esta capa.**
+* **`200 OK`**: El usuario con el documento especificado sí existe.
+    * **Cuerpo:** Vacío.
+* **`404 Not Found`**: No se encontró ningún usuario con el documento especificado.
+    * **Cuerpo:** Vacío.
