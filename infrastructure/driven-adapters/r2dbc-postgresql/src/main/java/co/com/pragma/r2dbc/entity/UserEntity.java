@@ -14,6 +14,8 @@ import java.time.LocalDate;
 public class UserEntity {
     @Id
     private Long id;
+    @Column("documento_identidad")
+    private String documentoIdentidad;
     private String nombres;
     private String apellidos;
     @Column("fecha_nacimiento")

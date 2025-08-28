@@ -12,6 +12,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class UserDTO {
+    private String documentoIdentidad;
     private String nombres;
     private String apellidos;
     private LocalDate fechaNacimiento;
