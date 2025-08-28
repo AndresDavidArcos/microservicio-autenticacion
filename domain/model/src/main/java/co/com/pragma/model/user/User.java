@@ -8,6 +8,8 @@ import lombok.*;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class User {
+    private String id;
+    private String documentoIdentidad;
     private String nombres;
     private String apellidos;
     private java.time.LocalDate fechaNacimiento;
@@ -15,5 +17,4 @@ public class User {
     private String telefono;
     private String correoElectronico;
     private Double salarioBase;
-    private String id;
 }

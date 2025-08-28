@@ -30,4 +30,16 @@ public class Handler {
                 .onErrorResume(IllegalStateException.class, e ->
                         ServerResponse.status(HttpStatus.CONFLICT).bodyValue(e.getMessage()));
     }
+
+    public Mono<ServerResponse> existeUsuarioPorDocumento(ServerRequest serverRequest) {
+        String documento = serverRequest.pathVariable("documento");
+        return userUseCase.existePorDocumento(documento)
+                .flatMap(existe -> {
+                    if (Boolean.TRUE.equals(existe)) {
+                        return ServerResponse.ok().build();
+                    }
+                    return ServerResponse.notFound().build();
+                });
+    }
+
 }

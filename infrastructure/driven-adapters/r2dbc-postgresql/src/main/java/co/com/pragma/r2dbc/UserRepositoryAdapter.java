@@ -27,13 +27,13 @@ public class UserRepositoryAdapter extends ReactiveAdapterOperations<
     }
 
     @Override
-    public Mono<User> buscarPorCorreo(String correo) {
-        return repository.findByCorreoElectronico(correo)
-                .map(userEntity -> this.toEntity(userEntity));
-    }
-
-    @Override
     public Mono<Boolean> existeCorreo(String correo) {
         return repository.existsByCorreoElectronico(correo);
     }
+
+    @Override
+    public Mono<Boolean> existePorDocumento(String documentoIdentidad) {
+        return repository.existsByDocumentoIdentidad(documentoIdentidad);
+    }
+
 }
