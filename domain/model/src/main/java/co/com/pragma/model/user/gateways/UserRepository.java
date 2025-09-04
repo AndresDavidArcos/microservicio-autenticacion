@@ -4,6 +4,7 @@ import reactor.core.publisher.Mono;
 
 public interface UserRepository {
     Mono<User> guardarUsuario(User usuario);
+    Mono<User> buscarPorCorreo(String correo);
     Mono<Boolean> existePorDocumento(String documentoIdentidad);
     Mono<Boolean> existeCorreo(String correo);
 }

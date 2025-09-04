@@ -1,7 +1,11 @@
 package co.com.pragma.api;
 
+
+import co.com.pragma.api.dto.LoginDTO;
+import co.com.pragma.api.dto.LoginResponseDTO;
 import co.com.pragma.api.dto.UserDTO;
 import co.com.pragma.api.mapper.UserDTOMapper;
+import co.com.pragma.api.validation.ValidatorHandler;
 import co.com.pragma.usecase.user.UserUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,19 +20,26 @@ import reactor.core.publisher.Mono;
 public class Handler {
     private final UserUseCase userUseCase;
     private final UserDTOMapper userDTOMapper;
+    private final ValidatorHandler validatorHandler;
 
     public Mono<ServerResponse> registrarUsuario(ServerRequest serverRequest) {
         return serverRequest.bodyToMono(UserDTO.class)
+                .flatMap(validatorHandler::validate)
                 .map(userDTOMapper::toModel)
                 .flatMap(userUseCase::registrarUsuario)
                 .map(userDTOMapper::toDTO)
                 .flatMap(dto -> ServerResponse.status(HttpStatus.CREATED)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(dto))
-                .onErrorResume(IllegalArgumentException.class, e ->
-                        ServerResponse.badRequest().bodyValue(e.getMessage()))
-                .onErrorResume(IllegalStateException.class, e ->
-                        ServerResponse.status(HttpStatus.CONFLICT).bodyValue(e.getMessage()));
+                        .bodyValue(dto));
+    }
+
+    public Mono<ServerResponse> login(ServerRequest serverRequest) {
+        return serverRequest.bodyToMono(LoginDTO.class)
+                .flatMap(validatorHandler::validate)
+                .flatMap(dto -> userUseCase.login(dto.getCorreo(), dto.getPassword()))
+                .flatMap(token -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(new LoginResponseDTO(token)));
     }
 
     public Mono<ServerResponse> existeUsuarioPorDocumento(ServerRequest serverRequest) {
@@ -41,5 +52,4 @@ public class Handler {
                     return ServerResponse.notFound().build();
                 });
     }
-
 }

@@ -16,5 +16,7 @@ public class User {
     private String direccion;
     private String telefono;
     private String correoElectronico;
+    private String password;
     private Double salarioBase;
+    private String rol;
 }
