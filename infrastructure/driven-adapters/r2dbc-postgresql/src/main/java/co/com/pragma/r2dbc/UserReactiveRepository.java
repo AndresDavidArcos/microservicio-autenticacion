@@ -8,7 +8,8 @@ import reactor.core.publisher.Mono;
 
 // TODO: This file is just an example, you should delete or modify it
 public interface UserReactiveRepository extends ReactiveCrudRepository<UserEntity, Long>, ReactiveQueryByExampleExecutor<UserEntity> {
-    Mono<UserEntity> findByCorreoElectronico(String correoElectronico);
+    Mono<UserEntity> findByCorreoElectronico(String correo);
+    Mono<UserEntity> findByDocumentoIdentidad(String documentoIdentidad);
     Mono<Boolean> existsByCorreoElectronico(String correo);
     Mono<Boolean> existsByDocumentoIdentidad(String documentoIdentidad);
 }

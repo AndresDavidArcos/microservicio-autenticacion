@@ -1,50 +1,61 @@
 package co.com.pragma.usecase.user;
 
+import co.com.pragma.model.exception.ConflictException;
+import co.com.pragma.model.exception.UnauthorizedException;
 import co.com.pragma.model.user.User;
+import co.com.pragma.model.user.gateways.AuthTokenGenerator;
 import co.com.pragma.model.user.gateways.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import reactor.core.publisher.Mono;
 
 @RequiredArgsConstructor
 public class UserUseCase {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthTokenGenerator tokenGenerator;
 
     public Mono<User> registrarUsuario(User user) {
+        return validarExistencia(user)
+                .flatMap(validatedUser -> {
+                    validatedUser.setPassword(passwordEncoder.encode(validatedUser.getPassword()));
+                    return userRepository.guardarUsuario(validatedUser);
+                });
+    }
 
-        if (user.getDocumentoIdentidad() == null || user.getDocumentoIdentidad().isBlank() ||
-                user.getNombres() == null || user.getNombres().isBlank() ||
-                user.getApellidos() == null || user.getApellidos().isBlank() ||
-                user.getCorreoElectronico() == null || user.getCorreoElectronico().isBlank() ||
-                user.getSalarioBase() == null) {
-            return Mono.error(new IllegalArgumentException("Documento, nombres, apellidos, correo y salario son obligatorios."));
-        }
+    public Mono<String> login(String correo, String password) {
+        return userRepository.buscarPorCorreo(correo)
+                .switchIfEmpty(Mono.error(new UnauthorizedException("Credenciales inválidas")))
+                .flatMap(user -> {
+                    if (passwordEncoder.matches(password, user.getPassword())) {
+                        return Mono.just(tokenGenerator.generateToken(user));
+                    }
+                    return Mono.error(new UnauthorizedException("Credenciales inválidas"));
+                });
+    }
 
-        if (!user.getCorreoElectronico().matches("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
-            return Mono.error(new IllegalArgumentException("Formato de correo electrónico inválido."));
-        }
-        if (user.getSalarioBase() < 0 || user.getSalarioBase() > 15000000) {
-            return Mono.error(new IllegalArgumentException("El salario base debe estar entre 0 y 15,000,000."));
-        }
+    public Mono<Boolean> existePorDocumento(String documentoIdentidad) {
+        return userRepository.existePorDocumento(documentoIdentidad);
+    }
 
+    public Mono<User> buscarPorDocumento(String documentoIdentidad) {
+        return userRepository.buscarPorDocumento(documentoIdentidad);
+    }
+
+    private Mono<User> validarExistencia(User user) {
         return Mono.zip(
                 userRepository.existeCorreo(user.getCorreoElectronico()),
                 userRepository.existePorDocumento(user.getDocumentoIdentidad())
         ).flatMap(tuple -> {
             boolean correoExiste = tuple.getT1();
             boolean documentoExiste = tuple.getT2();
-
             if (correoExiste) {
-                return Mono.error(new IllegalStateException("El correo electrónico ya está registrado."));
+                return Mono.error(new ConflictException("El correo electrónico ya está registrado."));
             }
             if (documentoExiste) {
-                return Mono.error(new IllegalStateException("El documento de identidad ya está registrado."));
+                return Mono.error(new ConflictException("El documento de identidad ya está registrado."));
             }
-
-            return userRepository.guardarUsuario(user);
+            return Mono.just(user);
         });
-    }
-
-    public Mono<Boolean> existePorDocumento(String documentoIdentidad) {
-        return userRepository.existePorDocumento(documentoIdentidad);
     }
 }

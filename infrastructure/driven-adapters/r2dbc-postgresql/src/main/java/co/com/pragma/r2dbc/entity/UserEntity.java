@@ -24,6 +24,11 @@ public class UserEntity {
     private String telefono;
     @Column("correo_electronico")
     private String correoElectronico;
+
+    private String password;
+
     @Column("salario_base")
     private Double salarioBase;
+
+    private String rol;
 }

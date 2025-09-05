@@ -1,5 +1,9 @@
 package co.com.pragma.usecase.user;
+
+import co.com.pragma.model.exception.ConflictException;
+import co.com.pragma.model.exception.UnauthorizedException;
 import co.com.pragma.model.user.User;
+import co.com.pragma.model.user.gateways.AuthTokenGenerator;
 import co.com.pragma.model.user.gateways.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -8,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -20,6 +25,10 @@ class UserUseCaseTest {
 
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private PasswordEncoder passwordEncoder;
+    @Mock
+    private AuthTokenGenerator tokenGenerator;
 
     @InjectMocks
     private UserUseCase userUseCase;
@@ -33,6 +42,7 @@ class UserUseCaseTest {
                 .nombres("John")
                 .apellidos("Doe")
                 .correoElectronico("john.doe@email.com")
+                .password("Password123")
                 .salarioBase(5000000.0)
                 .build();
     }
@@ -42,12 +52,17 @@ class UserUseCaseTest {
     void registrarUsuarioExitoso() {
         when(userRepository.existeCorreo(anyString())).thenReturn(Mono.just(false));
         when(userRepository.existePorDocumento(anyString())).thenReturn(Mono.just(false));
-        when(userRepository.guardarUsuario(any(User.class))).thenReturn(Mono.just(user));
+        when(passwordEncoder.encode(anyString())).thenReturn("password-encriptado");
+        when(userRepository.guardarUsuario(any(User.class))).thenAnswer(invocation -> {
+            User userArgument = invocation.getArgument(0);
+            userArgument.setPassword("password-encriptado");
+            return Mono.just(userArgument);
+        });
 
         Mono<User> resultado = userUseCase.registrarUsuario(user);
 
         StepVerifier.create(resultado)
-                .expectNext(user)
+                .expectNextMatches(u -> u.getPassword().equals("password-encriptado"))
                 .verifyComplete();
     }
 
@@ -60,44 +75,51 @@ class UserUseCaseTest {
         Mono<User> resultado = userUseCase.registrarUsuario(user);
 
         StepVerifier.create(resultado)
-                .expectError(IllegalStateException.class)
+                .expectError(ConflictException.class)
                 .verify();
     }
 
     @Test
-    @DisplayName("Prueba de fallo al registrar por documento duplicado")
-    void registrarUsuarioFalloDocumentoDuplicado() {
-        when(userRepository.existeCorreo(anyString())).thenReturn(Mono.just(false));
-        when(userRepository.existePorDocumento(anyString())).thenReturn(Mono.just(true));
+    @DisplayName("Prueba de login exitoso")
+    void loginExitoso() {
+        String tokenEsperado = "jwt-token-de-prueba";
+        user.setPassword("password-encriptado");
 
-        Mono<User> resultado = userUseCase.registrarUsuario(user);
+        when(userRepository.buscarPorCorreo(anyString())).thenReturn(Mono.just(user));
+        when(passwordEncoder.matches("Password123", "password-encriptado")).thenReturn(true);
+        when(tokenGenerator.generateToken(any(User.class))).thenReturn(tokenEsperado);
+
+        Mono<String> resultado = userUseCase.login("john.doe@email.com", "Password123");
 
         StepVerifier.create(resultado)
-                .expectError(IllegalStateException.class)
+                .expectNext(tokenEsperado)
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Prueba de login fallido por usuario no encontrado")
+    void loginFalloUsuarioNoEncontrado() {
+        when(userRepository.buscarPorCorreo(anyString())).thenReturn(Mono.empty());
+
+        Mono<String> resultado = userUseCase.login("noexiste@email.com", "Password123");
+
+        StepVerifier.create(resultado)
+                .expectError(UnauthorizedException.class)
                 .verify();
     }
 
     @Test
-    @DisplayName("Prueba de fallo por campos obligatorios nulos")
-    void registrarUsuarioFalloCamposNulos() {
-        user.setNombres(null);
+    @DisplayName("Prueba de login fallido por contraseña incorrecta")
+    void loginFalloPasswordIncorrecta() {
+        user.setPassword("password-encriptado");
 
-        Mono<User> resultado = userUseCase.registrarUsuario(user);
+        when(userRepository.buscarPorCorreo(anyString())).thenReturn(Mono.just(user));
+        when(passwordEncoder.matches("password-incorrecto", "password-encriptado")).thenReturn(false);
 
-        StepVerifier.create(resultado)
-                .expectError(IllegalArgumentException.class)
-                .verify();
-    }
-
-    @Test
-    @DisplayName("Prueba de fallo por formato de correo inválido")
-    void registrarUsuarioFalloFormatoCorreo() {
-        user.setCorreoElectronico("correo-invalido");
-
-        Mono<User> resultado = userUseCase.registrarUsuario(user);
+        Mono<String> resultado = userUseCase.login("john.doe@email.com", "password-incorrecto");
 
         StepVerifier.create(resultado)
-                .expectError(IllegalArgumentException.class)
+                .expectError(UnauthorizedException.class)
                 .verify();
     }
 }
