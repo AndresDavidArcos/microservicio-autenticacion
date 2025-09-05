@@ -38,6 +38,10 @@ public class UserUseCase {
         return userRepository.existePorDocumento(documentoIdentidad);
     }
 
+    public Mono<User> buscarPorDocumento(String documentoIdentidad) {
+        return userRepository.buscarPorDocumento(documentoIdentidad);
+    }
+
     private Mono<User> validarExistencia(User user) {
         return Mono.zip(
                 userRepository.existeCorreo(user.getCorreoElectronico()),

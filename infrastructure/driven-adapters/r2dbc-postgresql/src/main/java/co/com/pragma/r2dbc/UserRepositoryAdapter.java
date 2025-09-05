@@ -38,6 +38,11 @@ public class UserRepositoryAdapter extends ReactiveAdapterOperations<
     }
 
     @Override
+    public Mono<User> buscarPorDocumento(String documentoIdentidad) {
+        return repository.findByDocumentoIdentidad(documentoIdentidad).map(this::toEntity);
+    }
+
+    @Override
     public Mono<Boolean> existePorDocumento(String documentoIdentidad) {
         return repository.existsByDocumentoIdentidad(documentoIdentidad);
     }

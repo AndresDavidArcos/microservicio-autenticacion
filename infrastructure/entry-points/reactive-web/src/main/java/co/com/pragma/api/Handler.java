@@ -52,4 +52,14 @@ public class Handler {
                     return ServerResponse.notFound().build();
                 });
     }
+
+    public Mono<ServerResponse> buscarUsuarioPorDocumento(ServerRequest serverRequest) {
+        String documento = serverRequest.pathVariable("documento");
+        return userUseCase.buscarPorDocumento(documento)
+                .map(userDTOMapper::toDTO)
+                .flatMap(userDTO -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(userDTO))
+                .switchIfEmpty(ServerResponse.notFound().build());
+    }
 }

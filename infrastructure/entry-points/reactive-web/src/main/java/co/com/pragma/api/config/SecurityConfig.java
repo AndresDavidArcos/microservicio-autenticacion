@@ -32,9 +32,9 @@ public class SecurityConfig {
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers("/api/v1/login").permitAll()
                         .pathMatchers("/api/v1/usuarios/existe/**").permitAll()
-
+                        .pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/usuarios").hasAnyRole("ADMIN", "ASESOR")
-
+                        .pathMatchers(HttpMethod.GET, "/api/v1/usuarios/{documento}").hasAnyRole("ADMIN", "ASESOR")
                         .anyExchange().authenticated()
                 )
                 .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
