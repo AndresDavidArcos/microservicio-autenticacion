@@ -3,7 +3,6 @@ package co.com.pragma.usecase.user;
 import co.com.pragma.model.exception.ConflictException;
 import co.com.pragma.model.exception.UnauthorizedException;
 import co.com.pragma.model.user.User;
-import co.com.pragma.model.user.gateways.AuthTokenGenerator;
 import co.com.pragma.model.user.gateways.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,7 +12,6 @@ import reactor.core.publisher.Mono;
 public class UserUseCase {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AuthTokenGenerator tokenGenerator;
 
     public Mono<User> registrarUsuario(User user) {
         return validarExistencia(user)
@@ -23,12 +21,12 @@ public class UserUseCase {
                 });
     }
 
-    public Mono<String> login(String correo, String password) {
+    public Mono<User> login(String correo, String password) {
         return userRepository.buscarPorCorreo(correo)
                 .switchIfEmpty(Mono.error(new UnauthorizedException("Credenciales inválidas")))
                 .flatMap(user -> {
                     if (passwordEncoder.matches(password, user.getPassword())) {
-                        return Mono.just(tokenGenerator.generateToken(user));
+                        return Mono.just(user);
                     }
                     return Mono.error(new UnauthorizedException("Credenciales inválidas"));
                 });
