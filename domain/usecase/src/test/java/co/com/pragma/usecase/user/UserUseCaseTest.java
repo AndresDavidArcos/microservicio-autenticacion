@@ -3,7 +3,6 @@ package co.com.pragma.usecase.user;
 import co.com.pragma.model.exception.ConflictException;
 import co.com.pragma.model.exception.UnauthorizedException;
 import co.com.pragma.model.user.User;
-import co.com.pragma.model.user.gateways.AuthTokenGenerator;
 import co.com.pragma.model.user.gateways.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,8 +26,6 @@ class UserUseCaseTest {
     private UserRepository userRepository;
     @Mock
     private PasswordEncoder passwordEncoder;
-    @Mock
-    private AuthTokenGenerator tokenGenerator;
 
     @InjectMocks
     private UserUseCase userUseCase;
@@ -43,6 +40,7 @@ class UserUseCaseTest {
                 .apellidos("Doe")
                 .correoElectronico("john.doe@email.com")
                 .password("Password123")
+                .rol("CLIENTE")
                 .salarioBase(5000000.0)
                 .build();
     }
@@ -53,11 +51,7 @@ class UserUseCaseTest {
         when(userRepository.existeCorreo(anyString())).thenReturn(Mono.just(false));
         when(userRepository.existePorDocumento(anyString())).thenReturn(Mono.just(false));
         when(passwordEncoder.encode(anyString())).thenReturn("password-encriptado");
-        when(userRepository.guardarUsuario(any(User.class))).thenAnswer(invocation -> {
-            User userArgument = invocation.getArgument(0);
-            userArgument.setPassword("password-encriptado");
-            return Mono.just(userArgument);
-        });
+        when(userRepository.guardarUsuario(any(User.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
         Mono<User> resultado = userUseCase.registrarUsuario(user);
 
@@ -80,19 +74,29 @@ class UserUseCaseTest {
     }
 
     @Test
-    @DisplayName("Prueba de login exitoso")
-    void loginExitoso() {
-        String tokenEsperado = "jwt-token-de-prueba";
-        user.setPassword("password-encriptado");
+    @DisplayName("Prueba de fallo al registrar por documento duplicado")
+    void registrarUsuarioFalloDocumentoDuplicado() {
+        when(userRepository.existeCorreo(anyString())).thenReturn(Mono.just(false));
+        when(userRepository.existePorDocumento(anyString())).thenReturn(Mono.just(true));
 
-        when(userRepository.buscarPorCorreo(anyString())).thenReturn(Mono.just(user));
-        when(passwordEncoder.matches("Password123", "password-encriptado")).thenReturn(true);
-        when(tokenGenerator.generateToken(any(User.class))).thenReturn(tokenEsperado);
-
-        Mono<String> resultado = userUseCase.login("john.doe@email.com", "Password123");
+        Mono<User> resultado = userUseCase.registrarUsuario(user);
 
         StepVerifier.create(resultado)
-                .expectNext(tokenEsperado)
+                .expectError(ConflictException.class)
+                .verify();
+    }
+
+    @Test
+    @DisplayName("Prueba de login exitoso")
+    void loginExitoso() {
+        User userFromDb = user.toBuilder().password("password-encriptado").build();
+        when(userRepository.buscarPorCorreo(anyString())).thenReturn(Mono.just(userFromDb));
+        when(passwordEncoder.matches("Password123", "password-encriptado")).thenReturn(true);
+
+        Mono<User> resultado = userUseCase.login("john.doe@email.com", "Password123");
+
+        StepVerifier.create(resultado)
+                .expectNext(userFromDb)
                 .verifyComplete();
     }
 
@@ -101,7 +105,7 @@ class UserUseCaseTest {
     void loginFalloUsuarioNoEncontrado() {
         when(userRepository.buscarPorCorreo(anyString())).thenReturn(Mono.empty());
 
-        Mono<String> resultado = userUseCase.login("noexiste@email.com", "Password123");
+        Mono<User> resultado = userUseCase.login("noexiste@email.com", "Password123");
 
         StepVerifier.create(resultado)
                 .expectError(UnauthorizedException.class)
@@ -111,15 +115,38 @@ class UserUseCaseTest {
     @Test
     @DisplayName("Prueba de login fallido por contraseña incorrecta")
     void loginFalloPasswordIncorrecta() {
-        user.setPassword("password-encriptado");
-
-        when(userRepository.buscarPorCorreo(anyString())).thenReturn(Mono.just(user));
+        User userFromDb = user.toBuilder().password("password-encriptado").build();
+        when(userRepository.buscarPorCorreo(anyString())).thenReturn(Mono.just(userFromDb));
         when(passwordEncoder.matches("password-incorrecto", "password-encriptado")).thenReturn(false);
 
-        Mono<String> resultado = userUseCase.login("john.doe@email.com", "password-incorrecto");
+        Mono<User> resultado = userUseCase.login("john.doe@email.com", "password-incorrecto");
 
         StepVerifier.create(resultado)
                 .expectError(UnauthorizedException.class)
                 .verify();
+    }
+
+    @Test
+    @DisplayName("Prueba de búsqueda de usuario por documento exitosa")
+    void buscarPorDocumentoExitoso() {
+        when(userRepository.buscarPorDocumento(anyString())).thenReturn(Mono.just(user));
+
+        Mono<User> resultado = userUseCase.buscarPorDocumento("123456789");
+
+        StepVerifier.create(resultado)
+                .expectNext(user)
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Prueba de verificación de existencia por documento")
+    void existePorDocumentoExitoso() {
+        when(userRepository.existePorDocumento(anyString())).thenReturn(Mono.just(true));
+
+        Mono<Boolean> resultado = userUseCase.existePorDocumento("123456789");
+
+        StepVerifier.create(resultado)
+                .expectNext(true)
+                .verifyComplete();
     }
 }

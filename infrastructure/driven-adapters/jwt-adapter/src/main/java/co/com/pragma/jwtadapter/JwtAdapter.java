@@ -1,7 +1,6 @@
 package co.com.pragma.jwtadapter;
 
 import co.com.pragma.model.user.User;
-import co.com.pragma.model.user.gateways.AuthTokenGenerator;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -10,7 +9,7 @@ import org.springframework.stereotype.Component;
 import java.util.Date;
 
 @Component
-public class JwtAdapter implements AuthTokenGenerator {
+public class JwtAdapter{
 
     @Value("${adapters.jwt.secret}")
     private String jwtSecret;
@@ -18,7 +17,6 @@ public class JwtAdapter implements AuthTokenGenerator {
     @Value("${adapters.jwt.expiration-ms}")
     private long jwtExpirationMs;
 
-    @Override
     public String generateToken(User user) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
