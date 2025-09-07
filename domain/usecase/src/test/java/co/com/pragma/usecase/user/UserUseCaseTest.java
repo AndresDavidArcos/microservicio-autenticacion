@@ -4,6 +4,7 @@ import co.com.pragma.model.exception.ConflictException;
 import co.com.pragma.model.exception.UnauthorizedException;
 import co.com.pragma.model.user.User;
 import co.com.pragma.model.user.gateways.UserRepository;
+import co.com.pragma.model.user.gateways.PasswordManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,7 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -25,7 +25,7 @@ class UserUseCaseTest {
     @Mock
     private UserRepository userRepository;
     @Mock
-    private PasswordEncoder passwordEncoder;
+    private PasswordManager passwordManager;
 
     @InjectMocks
     private UserUseCase userUseCase;
@@ -50,7 +50,7 @@ class UserUseCaseTest {
     void registrarUsuarioExitoso() {
         when(userRepository.existeCorreo(anyString())).thenReturn(Mono.just(false));
         when(userRepository.existePorDocumento(anyString())).thenReturn(Mono.just(false));
-        when(passwordEncoder.encode(anyString())).thenReturn("password-encriptado");
+        when(passwordManager.encode(anyString())).thenReturn("password-encriptado");
         when(userRepository.guardarUsuario(any(User.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
         Mono<User> resultado = userUseCase.registrarUsuario(user);
@@ -91,7 +91,7 @@ class UserUseCaseTest {
     void loginExitoso() {
         User userFromDb = user.toBuilder().password("password-encriptado").build();
         when(userRepository.buscarPorCorreo(anyString())).thenReturn(Mono.just(userFromDb));
-        when(passwordEncoder.matches("Password123", "password-encriptado")).thenReturn(true);
+        when(passwordManager.matches("Password123", "password-encriptado")).thenReturn(true);
 
         Mono<User> resultado = userUseCase.login("john.doe@email.com", "Password123");
 
@@ -117,7 +117,7 @@ class UserUseCaseTest {
     void loginFalloPasswordIncorrecta() {
         User userFromDb = user.toBuilder().password("password-encriptado").build();
         when(userRepository.buscarPorCorreo(anyString())).thenReturn(Mono.just(userFromDb));
-        when(passwordEncoder.matches("password-incorrecto", "password-encriptado")).thenReturn(false);
+        when(passwordManager.matches("password-incorrecto", "password-encriptado")).thenReturn(false);
 
         Mono<User> resultado = userUseCase.login("john.doe@email.com", "password-incorrecto");
 
