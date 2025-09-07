@@ -10,12 +10,14 @@ import java.util.Date;
 
 @Component
 public class JwtAdapter{
+    private final String jwtSecret;
+    private final long jwtExpirationMs;
 
-    @Value("${adapters.jwt.secret}")
-    private String jwtSecret;
-
-    @Value("${adapters.jwt.expiration-ms}")
-    private long jwtExpirationMs;
+    public JwtAdapter(@Value("${adapters.jwt.secret}") String jwtSecret,
+                      @Value("${adapters.jwt.expiration-ms}") long jwtExpirationMs) {
+        this.jwtSecret = jwtSecret;
+        this.jwtExpirationMs = jwtExpirationMs;
+    }
 
     public String generateToken(User user) {
         Date now = new Date();

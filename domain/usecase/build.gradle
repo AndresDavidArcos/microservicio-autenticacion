@@ -2,6 +2,4 @@ dependencies {
     implementation project(':model')
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
-    implementation 'org.springframework.security:spring-security-crypto'
-
 }

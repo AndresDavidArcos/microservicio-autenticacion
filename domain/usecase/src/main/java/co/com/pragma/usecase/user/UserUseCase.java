@@ -4,19 +4,19 @@ import co.com.pragma.model.exception.ConflictException;
 import co.com.pragma.model.exception.UnauthorizedException;
 import co.com.pragma.model.user.User;
 import co.com.pragma.model.user.gateways.UserRepository;
+import co.com.pragma.model.user.gateways.PasswordManager;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import reactor.core.publisher.Mono;
 
 @RequiredArgsConstructor
 public class UserUseCase {
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordManager passwordManager;
 
     public Mono<User> registrarUsuario(User user) {
         return validarExistencia(user)
                 .flatMap(validatedUser -> {
-                    validatedUser.setPassword(passwordEncoder.encode(validatedUser.getPassword()));
+                    validatedUser.setPassword(passwordManager.encode(validatedUser.getPassword()));
                     return userRepository.guardarUsuario(validatedUser);
                 });
     }
@@ -25,7 +25,7 @@ public class UserUseCase {
         return userRepository.buscarPorCorreo(correo)
                 .switchIfEmpty(Mono.error(new UnauthorizedException("Credenciales inválidas")))
                 .flatMap(user -> {
-                    if (passwordEncoder.matches(password, user.getPassword())) {
+                    if (passwordManager.matches(password, user.getPassword())) {
                         return Mono.just(user);
                     }
                     return Mono.error(new UnauthorizedException("Credenciales inválidas"));

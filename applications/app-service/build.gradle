@@ -1,13 +1,16 @@
 apply plugin: 'org.springframework.boot'
 
 dependencies {
+	implementation project(':bcrypt-adapter')
 	implementation project(':jwt-adapter')
 	implementation project(':reactive-web')
 	implementation 'org.reactivecommons.utils:object-mapper:0.1.0'
 	implementation project(':r2dbc-postgresql')
     implementation project(':model')
     implementation project(':usecase')
+    implementation "org.flywaydb:flyway-database-postgresql"
     implementation 'org.springframework.boot:spring-boot-starter'
+    runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly('org.springframework.boot:spring-boot-devtools')
     testImplementation 'com.tngtech.archunit:archunit:1.4.1'
     testImplementation 'com.fasterxml.jackson.core:jackson-databind'
