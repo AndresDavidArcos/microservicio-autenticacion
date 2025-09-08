@@ -6,10 +6,13 @@ import co.com.pragma.api.dto.UserDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springdoc.core.annotations.RouterOperation;
 import org.springdoc.core.annotations.RouterOperations;
 import org.springframework.context.annotation.Bean;
@@ -23,6 +26,12 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
 @Configuration
+@SecurityScheme(
+        name = "bearerAuth",
+        type = SecuritySchemeType.HTTP,
+        scheme = "bearer",
+        bearerFormat = "JWT"
+)
 public class RouterRest {
 
     @Bean
@@ -35,6 +44,7 @@ public class RouterRest {
                     beanMethod = "registrarUsuario",
                     operation = @Operation(
                             summary = "Registrar un nuevo usuario",
+                            security = @SecurityRequirement(name = "bearerAuth"),
                             description = "Crea un nuevo usuario en el sistema. Requiere rol de ADMIN o ASESOR.",
                             operationId = "registrarUsuario",
                             tags = {"Usuarios"},
@@ -101,6 +111,7 @@ public class RouterRest {
                     beanMethod = "buscarUsuarioPorDocumento",
                     operation = @Operation(
                             summary = "Obtener datos de un usuario por documento",
+                            security = @SecurityRequirement(name = "bearerAuth"),
                             description = "Recupera la información completa de un usuario. Requiere rol de ADMIN o ASESOR.",
                             operationId = "buscarUsuarioPorDocumento",
                             tags = {"Usuarios"},
