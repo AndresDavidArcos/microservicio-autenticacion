@@ -53,6 +53,10 @@ public class JwtAdapter{
         return getAllClaimsFromToken(token).getExpiration();
     }
 
+    public String getDocumentoFromToken(String token) {
+        return getAllClaimsFromToken(token).get("documentoIdentidad", String.class);
+    }
+
     private Boolean isTokenExpired(String token) {
         final Date expiration = getExpirationDateFromToken(token);
         return expiration.before(new Date());

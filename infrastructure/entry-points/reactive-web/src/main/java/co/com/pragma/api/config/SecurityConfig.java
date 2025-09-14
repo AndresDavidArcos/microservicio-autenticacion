@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import co.com.pragma.api.security.UserAccessManager;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -17,6 +18,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final UserAccessManager userAccessManager;
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
@@ -27,7 +29,7 @@ public class SecurityConfig {
                         .pathMatchers("/api/v1/usuarios/existe/**").permitAll()
                         .pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/usuarios").hasAnyRole("ADMIN", "ASESOR")
-                        .pathMatchers(HttpMethod.GET, "/api/v1/usuarios/{documento}").hasAnyRole("ADMIN", "ASESOR")
+                        .pathMatchers(HttpMethod.GET, "/api/v1/usuarios/{documento}").access(userAccessManager)
                         .anyExchange().authenticated()
                 )
                 .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
