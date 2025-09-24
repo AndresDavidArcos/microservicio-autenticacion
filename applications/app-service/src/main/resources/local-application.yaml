@@ -11,15 +11,7 @@ spring:
   devtools:
     add-properties: false
 adapters:
-  r2dbc:
-    host: "${DB_HOST}"
-    port: "${DB_PORT}"
-    database: "${DB_AUTH_NAME}"
-    schema: "public"
-    username: "${DB_USER}"
-    password: "${DB_PASSWORD}"
   jwt:
-    secret: "${JWT_SECRET}"
     expiration-ms: 28800000
 management:
   endpoints:

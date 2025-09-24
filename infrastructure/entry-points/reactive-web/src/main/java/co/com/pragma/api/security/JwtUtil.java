@@ -1,23 +1,33 @@
-package co.com.pragma.jwtadapter;
+package co.com.pragma.api.security;
 
+
+import co.com.pragma.secretsprovider.SecretsProvider;
 import co.com.pragma.model.user.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
 import java.util.Date;
 
+@Slf4j
 @Component
-public class JwtAdapter{
-    private final String jwtSecret;
+public class JwtUtil {
     private final long jwtExpirationMs;
+    private final SecretsProvider secretsProvider;
 
-    public JwtAdapter(@Value("${adapters.jwt.secret}") String jwtSecret,
-                      @Value("${adapters.jwt.expiration-ms}") long jwtExpirationMs) {
-        this.jwtSecret = jwtSecret;
+    public JwtUtil(@Value("${adapters.jwt.expiration-ms}") long jwtExpirationMs, SecretsProvider secretsProvider) {
         this.jwtExpirationMs = jwtExpirationMs;
+        this.secretsProvider = secretsProvider;
     }
+
+/*
+    public JwtUtil(@Value("${adapter.jwt.secret}") String jwtSecret) {
+        this.jwtSecret = jwtSecret;
+    }
+*/
 
     public String generateToken(User user) {
         Date now = new Date();
@@ -29,20 +39,16 @@ public class JwtAdapter{
                 .claim("documentoIdentidad", user.getDocumentoIdentidad())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(Keys.hmacShaKeyFor(jwtSecret.getBytes()))
+                .signWith(Keys.hmacShaKeyFor(secretsProvider.getJwtSecret().getBytes()))
                 .compact();
     }
 
     private Claims getAllClaimsFromToken(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(Keys.hmacShaKeyFor(jwtSecret.getBytes()))
+                .setSigningKey(Keys.hmacShaKeyFor(secretsProvider.getJwtSecret().getBytes()))
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-    }
-
-    public String getUsernameFromToken(String token) {
-        return getAllClaimsFromToken(token).getSubject();
     }
 
     public String getRoleFromToken(String token) {
@@ -63,6 +69,10 @@ public class JwtAdapter{
     }
 
     public Boolean validateToken(String token) {
-        return !isTokenExpired(token);
+        try {
+            return !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

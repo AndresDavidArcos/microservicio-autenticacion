@@ -1,5 +1,6 @@
 package co.com.pragma.r2dbc.config;
 
+import co.com.pragma.secretsprovider.SecretsProvider;
 import io.r2dbc.pool.ConnectionPool;
 import io.r2dbc.pool.ConnectionPoolConfiguration;
 import io.r2dbc.postgresql.PostgresqlConnectionConfiguration;
@@ -9,6 +10,8 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
+import static io.r2dbc.postgresql.client.SSLMode.REQUIRE;
+
 @Configuration
 public class PostgreSQLConnectionPool {
     /* Change these values for your project */
@@ -17,7 +20,7 @@ public class PostgreSQLConnectionPool {
     public static final int MAX_IDLE_TIME = 30;
     public static final int DEFAULT_PORT = 5432;
 
-	@Bean
+/*	@Bean
 	public ConnectionPool getConnectionConfig(PostgresqlConnectionProperties properties) {
 		PostgresqlConnectionConfiguration dbConfiguration = PostgresqlConnectionConfiguration.builder()
                 .host(properties.host())
@@ -26,6 +29,18 @@ public class PostgreSQLConnectionPool {
                 .schema(properties.schema())
                 .username(properties.username())
                 .password(properties.password())
+                .build();*/
+
+    @Bean
+    public ConnectionPool getConnectionConfig(SecretsProvider secrets) {
+        PostgresqlConnectionConfiguration dbConfiguration = PostgresqlConnectionConfiguration.builder()
+                .host(secrets.getDbHost())
+                .port(secrets.getDbPort())
+                .database(secrets.getDbAuthName())
+                .schema(secrets.getDbSchema())
+                .username(secrets.getDbUser())
+                .password(secrets.getDbPassword())
+                .sslMode(REQUIRE)
                 .build();
 
         ConnectionPoolConfiguration poolConfiguration = ConnectionPoolConfiguration.builder()
