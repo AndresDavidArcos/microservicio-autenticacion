@@ -6,6 +6,7 @@ import co.com.pragma.model.user.User;
 import co.com.pragma.model.user.gateways.UserRepository;
 import co.com.pragma.model.user.gateways.PasswordManager;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RequiredArgsConstructor
@@ -56,4 +57,9 @@ public class UserUseCase {
             return Mono.just(user);
         });
     }
+
+    public Flux<User> buscarPorRol(String rol) {
+        return userRepository.findByRol(rol);
+    }
+
 }

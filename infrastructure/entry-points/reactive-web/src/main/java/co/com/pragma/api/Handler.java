@@ -65,4 +65,13 @@ public class Handler {
                         .bodyValue(userDTO))
                 .switchIfEmpty(ServerResponse.notFound().build());
     }
+
+    public Mono<ServerResponse> buscarUsuariosPorRol(ServerRequest serverRequest) {
+        String rol = serverRequest.pathVariable("rol");
+        return ServerResponse.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(userUseCase.buscarPorRol(rol)
+                        .map(userDTOMapper::toDTO), UserDTO.class);
+    }
+
 }
