@@ -5,8 +5,8 @@ import co.com.pragma.api.dto.LoginDTO;
 import co.com.pragma.api.dto.LoginResponseDTO;
 import co.com.pragma.api.dto.UserDTO;
 import co.com.pragma.api.mapper.UserDTOMapper;
+import co.com.pragma.api.security.JwtUtil;
 import co.com.pragma.api.validation.ValidatorHandler;
-import co.com.pragma.jwtadapter.JwtAdapter;
 import co.com.pragma.usecase.user.UserUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,7 +22,7 @@ public class Handler {
     private final UserUseCase userUseCase;
     private final UserDTOMapper userDTOMapper;
     private final ValidatorHandler validatorHandler;
-    private final JwtAdapter jwtAdapter;
+    private final JwtUtil jwt;
 
     public Mono<ServerResponse> registrarUsuario(ServerRequest serverRequest) {
         return serverRequest.bodyToMono(UserDTO.class)
@@ -39,7 +39,7 @@ public class Handler {
         return serverRequest.bodyToMono(LoginDTO.class)
                 .flatMap(validatorHandler::validate)
                 .flatMap(dto -> userUseCase.login(dto.getCorreo(), dto.getPassword()))
-                .map(jwtAdapter::generateToken)
+                .map(jwt::generateToken)
                 .flatMap(token -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(new LoginResponseDTO(token)));
