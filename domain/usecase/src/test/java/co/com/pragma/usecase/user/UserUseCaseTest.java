@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -147,6 +148,21 @@ class UserUseCaseTest {
 
         StepVerifier.create(resultado)
                 .expectNext(true)
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Prueba de búsqueda de usuarios por rol exitosa")
+    void buscarPorRolExitoso() {
+        User adminUser1 = User.builder().documentoIdentidad("1").rol("ADMIN").build();
+        User adminUser2 = User.builder().documentoIdentidad("2").rol("ADMIN").build();
+        when(userRepository.findByRol("ADMIN")).thenReturn(Flux.just(adminUser1, adminUser2));
+
+        Flux<User> resultado = userUseCase.buscarPorRol("ADMIN");
+
+        StepVerifier.create(resultado)
+                .expectNext(adminUser1)
+                .expectNext(adminUser2)
                 .verifyComplete();
     }
 }
