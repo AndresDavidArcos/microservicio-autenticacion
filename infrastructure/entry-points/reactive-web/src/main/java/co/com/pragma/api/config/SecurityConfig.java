@@ -31,6 +31,7 @@ public class SecurityConfig {
                         .pathMatchers("/actuator/health").permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/usuarios").hasAnyRole("ADMIN", "ASESOR")
                         .pathMatchers(HttpMethod.GET, "/api/v1/usuarios/{documento}").access(userAccessManager)
+                        .pathMatchers(HttpMethod.GET, "/api/v1/usuarios/rol/**").hasRole("SERVICE")
                         .anyExchange().authenticated()
                 )
                 .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)

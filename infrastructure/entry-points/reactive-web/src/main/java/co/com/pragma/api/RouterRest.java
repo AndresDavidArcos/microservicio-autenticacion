@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -124,12 +125,36 @@ public class RouterRest {
                                     @ApiResponse(responseCode = "404", description = "El usuario no existe")
                             }
                     )
+            ),
+            @RouterOperation(
+                    path = "/api/v1/usuarios/rol/{rol}",
+                    produces = {MediaType.APPLICATION_JSON_VALUE},
+                    method = RequestMethod.GET,
+                    beanClass = Handler.class,
+                    beanMethod = "buscarUsuariosPorRol",
+                    operation = @Operation(
+                            summary = "Listar usuarios por rol",
+                            security = @SecurityRequirement(name = "bearerAuth"),
+                            description = "Obtiene una lista de todos los usuarios que pertenecen a un rol específico. Requiere un rol de 'SERVICE' para la comunicación interna entre microservicios.",
+                            operationId = "buscarUsuariosPorRol",
+                            tags = {"Usuarios"},
+                            parameters = {
+                                    @Parameter(in = ParameterIn.PATH, name = "rol", description = "Nombre del rol a buscar (ej: ADMIN)", required = true, schema = @Schema(type = "string"))
+                            },
+                            responses = {
+                                    @ApiResponse(responseCode = "200", description = "Listado de usuarios obtenido exitosamente",
+                                            content = @Content(array = @ArraySchema(schema = @Schema(implementation = UserDTO.class)))),
+                                    @ApiResponse(responseCode = "403", description = "Acceso denegado (rol no es SERVICE)")
+                            }
+                    )
             )
     })
     public RouterFunction<ServerResponse> routerFunction(Handler handler) {
         return route(POST("/api/v1/usuarios"), handler::registrarUsuario)
                 .andRoute(POST("/api/v1/login"), handler::login)
                 .andRoute(HEAD("/api/v1/usuarios/existe/{documento}"), handler::existeUsuarioPorDocumento)
-                .andRoute(GET("/api/v1/usuarios/{documento}"), handler::buscarUsuarioPorDocumento);
+                .andRoute(GET("/api/v1/usuarios/{documento}"), handler::buscarUsuarioPorDocumento)
+                .andRoute(GET("/api/v1/usuarios/rol/{rol}"), handler::buscarUsuariosPorRol);
+
     }
 }
